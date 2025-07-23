@@ -62,7 +62,7 @@
 
 1. **کلون کردن پروژه**
 ```bash
-git clone https://github.com/your-username/beris.git
+git clone https://github.com/mr-bayati-1378/beris.git
 cd beris
 ```
 
