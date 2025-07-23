@@ -1,0 +1,1183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Level 1 Category (Main Category)
+model CategoryL1 {
+  id          Int          @id @default(autoincrement())
+  name        String
+  slug        String       @unique
+  categoryL2s CategoryL2[] // Relation to Level 2 categories
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// Level 2 Category
+model CategoryL2 {
+  id          Int          @id @default(autoincrement())
+  name        String
+  slug        String       @unique
+  categoryL1  CategoryL1   @relation(fields: [categoryL1Id], references: [id])
+  categoryL1Id Int
+  categoryL3s CategoryL3[] // Relation to Level 3 categories
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// Level 3 Category
+model CategoryL3 {
+  id          Int       @id @default(autoincrement())
+  name        String
+  slug        String    @unique
+  categoryL2  CategoryL2 @relation(fields: [categoryL2Id], references: [id])
+  categoryL2Id Int
+  products    Product[] // Relation to products
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Product model
+model Product {
+  id                Int      @id @default(autoincrement())
+  name              String
+  slug              String   @unique
+  description       String?  @db.Text
+  brand             String?
+  price             Decimal  @db.Decimal(10, 2)
+  comparePrice      Decimal? @db.Decimal(10, 2)
+  image             String?
+  stock             Int      @default(0)
+  isActive          Boolean  @default(true)
+  isVipOnly         Boolean  @default(false) // محصولات اختصاصی برای مشتریان VIP
+  hasDiscount       Boolean  @default(false)
+  discountPercent   Int?
+  discountStartDate DateTime?
+  discountEndDate   DateTime?
+  averageRating     Float?   @default(0)
+  categoryL3Id      Int
+  categoryL3        CategoryL3 @relation(fields: [categoryL3Id], references: [id])
+  images        ProductImage[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  orderItems    OrderItem[]
+  ratings       ProductRating[]
+  reviews       ProductReview[]
+  stockAlerts   StockAlert[]
+  favorites     Favorite[]
+  tags          ProductTag[]
+  invoiceItems  InvoiceItem[]
+  packItems     ProductPackItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  purchaseInvoiceItems PurchaseInvoiceItem[]
+  outboundItems OutboundItem[]
+  userPackItems UserPackItem[]
+  userPackOrderItems UserPackOrderItem[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([categoryL3Id])
+  @@index([name])
+  @@index([createdAt])
+}
+
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  isMain    Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+}
+
+model ProductTag {
+  id        Int      @id @default(autoincrement())
+  name      String
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+model ProductRating {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  userId    String
+  rating    Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@index([productId])
+  @@index([userId])
+}
+
+model ProductReview {
+  id           Int           @id @default(autoincrement())
+  productId    Int
+  userId       String
+  rating       Int
+  title        String
+  content      String        @db.Text
+  comment      String?       @db.Text
+  status       ReviewStatus  @default(PENDING)
+  product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes        ReviewVote[]
+  replies      ReviewReply[]
+  helpfulCount Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ReviewVote {
+  id       Int      @id @default(autoincrement())
+  reviewId Int
+  userId   String
+  voteType String   // 'helpful' or 'unhelpful'
+  review   ProductReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([reviewId, userId])
+  @@index([reviewId])
+  @@index([userId])
+}
+
+model ReviewReply {
+  id       Int      @id @default(autoincrement())
+  reviewId Int
+  userId   String
+  content  String   @db.Text
+  review   ProductReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reviewId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// User model
+model User {
+  id                String    @id @default(cuid())
+  email             String?   @unique
+  username          String?   @unique
+  firstName         String?
+  lastName          String?
+  profileImage      String?   // Profile picture path
+  nationalCode      String?   @unique
+  phoneNumber       String?   @unique
+  phoneVerified     Boolean   @default(false)
+  isProfileComplete Boolean   @default(false)
+  latitude          Float?
+  longitude         Float?
+  password          String    // Hashed password
+  phone             String    @unique
+  emailVerified     Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  isVip             Boolean   @default(false) // مشتری VIP - دسترسی به محصولات اختصاصی
+  cart              Cart?
+  favorites         Favorite[]
+  addresses         Address[]
+  orders            Order[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  preferences       UserPreference?
+  notifications     Notification[]
+  // stockAlerts       StockAlert[] // حذف شده چون StockAlert دیگر به User مرتبط نیست
+  isAdmin           Boolean   @default(false)
+  adminRole         AdminRole? @relation(fields: [adminRoleId], references: [id])
+  adminRoleId       Int?
+  wishlist          Wishlist?
+  ratings           ProductRating[]
+  reviews           ProductReview[]
+  reviewVotes       ReviewVote[]
+  reviewReplies     ReviewReply[]
+  adminActivities   AdminActivity[]
+  customerInvoices  Invoice[] @relation("CustomerInvoices")
+  createdInvoices   Invoice[] @relation("CreatedInvoices")
+  createdPaymentDocuments PaymentDocument[] @relation("CreatedPaymentDocuments")
+  createdPurchaseOrders PurchaseOrder[] @relation("CreatedPurchaseOrders")
+  approvedPurchaseOrders PurchaseOrder[] @relation("ApprovedPurchaseOrders")
+  createdPurchaseInvoices PurchaseInvoice[] @relation("CreatedPurchaseInvoices")
+  createdInbounds       Inbound[] @relation("CreatedInbounds")
+  createdOutbounds      Outbound[] @relation("CreatedOutbounds")
+  approvedOutbounds     Outbound[] @relation("ApprovedOutbounds")
+  shippedOutbounds      Outbound[] @relation("ShippedOutbounds")
+  discountCodes         DiscountCode[]
+  purchaseComments      PurchaseComment[]
+  userPacks             UserPack[]
+  userPackOrders        UserPackOrder[]
+  productRequests       ProductRequest[] @relation("UserProductRequests")
+  adminProductRequests ProductRequest[] @relation("AdminProductRequests")
+  debts                 Debt[] @relation("AdminDebts")
+  salesRepDebts         Debt[] @relation("SalesRepDebts")
+  debtPayments          DebtPayment[] @relation("AdminDebtPayments")
+  customerDebts         Debt[] @relation("CustomerDebts")
+}
+
+// Shopping Cart
+model Cart {
+  id        Int        @id @default(autoincrement())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String     @unique
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+// Cart Item
+model CartItem {
+  id        Int       @id @default(autoincrement())
+  cartId    Int
+  cart      Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId Int?      // اختیاری - برای محصولات عادی
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userPackId Int?     // اختیاری - برای پک‌های کاربری
+  userPack  UserPack? @relation(fields: [userPackId], references: [id], onDelete: Cascade)
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cartId])
+  @@index([productId])
+  @@index([userPackId])
+}
+
+// Favorite/Wishlist
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+// Address
+model Address {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  title     String
+  address   String
+  city      String
+  state     String
+  zipCode   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Order {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  status    OrderStatus @default(PENDING)
+  total     Decimal   @db.Decimal(10, 2)
+  items     OrderItem[]
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  payment   Payment?
+  
+  // آدرس تحویل (Shipping Address)
+  deliveryAddress   String
+  deliveryCity      String
+  deliveryState     String
+  deliveryZipCode   String
+  deliveryPhone     String?
+  deliveryRecipient String? // نام گیرنده
+  
+  // آدرس فاکتور (Billing Address) - اختیاری
+  useSameAddressForBilling Boolean @default(true) // آیا از همان آدرس تحویل برای فاکتور استفاده شود
+  billingAddress   String?
+  billingCity      String?
+  billingState     String?
+  billingZipCode   String?
+  billingPhone     String?
+  billingRecipient String? // نام گیرنده فاکتور
+  
+  purchaseComment PurchaseComment?
+  debts     Debt[]    // روابط بدهی
+  
+  // فیلدهای تایید و رد سفارش
+  approvedBy String?  // ID کاربری که سفارش را تایید کرده
+  approvedAt DateTime?
+  rejectedBy String?  // ID کاربری که سفارش را رد کرده
+  rejectedAt DateTime?
+  salesRep   String?  // نام مسئول فروش
+  notes      String?  @db.Text // یادداشت‌های اضافی
+  
+  // فیلدهای تایید مالی
+  financeApprovedBy String?  // ID کاربری که تایید مالی کرده
+  financeApprovedAt DateTime?
+  financeRejectedBy String?  // ID کاربری که رد مالی کرده
+  financeRejectedAt DateTime?
+  financeNotes      String?  @db.Text // یادداشت‌های مالی
+  
+  // فیلدهای تایید انبار
+  warehouseApprovedBy String?  // ID کاربری که تایید انبار کرده
+  warehouseApprovedAt DateTime?
+  warehouseRejectedBy String?  // ID کاربری که رد انبار کرده
+  warehouseRejectedAt DateTime?
+  warehouseNotes      String?  @db.Text // یادداشت‌های انبار
+  
+  // منبع سفارش
+  orderSource OrderSource @default(WEBSITE) // WEBSITE یا SALES_REP
+  
+  // فیلدهای جدید فاکتور
+  invoiceNumber    String?  // کد فاکتور
+  orderDate        DateTime? // تاریخ سفارش
+  deliveryDate     DateTime? // تاریخ تحویل
+  settlementPeriod String?  // دوره تسویه
+  salesExpert      String?  // کارشناس فروش
+  salesChannel     String?  // کانال فروش
+  totalPurchase    Decimal? @db.Decimal(10, 2) // مبلغ خرید
+  totalGrossSale   Decimal? @db.Decimal(10, 2) // فروش ناخالص
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int?     // اختیاری - برای محصولات عادی
+  product   Product? @relation(fields: [productId], references: [id])
+  userPackId Int?    // اختیاری - برای پک‌های کاربری
+  userPack  UserPack? @relation(fields: [userPackId], references: [id])
+  quantity  Int
+  price     Decimal  @db.Decimal(10, 2)
+  // فیلدهای جدید آیتم
+  marginPercent Int?  // درصد مارژین
+  grossSale     Decimal? @db.Decimal(10, 2) // فروش ناخالص
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([userPackId])
+}
+
+model StockAlert {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  type      String   // 'low_stock', 'out_of_stock', 'custom'
+  message   String   @db.Text
+  isResolved Boolean @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?  // admin user ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([type])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+model UserPreference {
+  id                String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  emailNotifications Boolean @default(true)
+  smsNotifications   Boolean @default(true)
+  marketingEmails    Boolean @default(true)
+  theme            String   @default("light")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  content   String   @db.Text
+  isRead    Boolean  @default(false)
+  read      Boolean  @default(false)
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Wishlist {
+  id        Int           @id @default(autoincrement())
+  userId    String        @unique
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  id         Int      @id @default(autoincrement())
+  wishlistId Int
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([wishlistId])
+  @@index([productId])
+}
+
+// Phone Verification model
+model PhoneVerification {
+  id          Int      @id @default(autoincrement())
+  phoneNumber String   @unique
+  code        String
+  expiresAt   DateTime
+  verified    Boolean  @default(false)
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Password Reset model
+model PasswordReset {
+  id          Int      @id @default(autoincrement())
+  phoneNumber String   
+  code        String
+  expiresAt   DateTime
+  used        Boolean  @default(false)
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([phoneNumber])
+}
+
+// Payment Gateway model
+model PaymentGateway {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // zarinpal, mellat, saman, parsian, etc.
+  displayName String   // نام نمایشی
+  isActive    Boolean  @default(true)
+  config      Json     // تنظیمات گیت‌وی
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  payments    Payment[]
+}
+
+// Payment model
+model Payment {
+  id             Int            @id @default(autoincrement())
+  orderId        String         @unique
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  gatewayId      Int
+  gateway        PaymentGateway @relation(fields: [gatewayId], references: [id])
+  amount         Decimal        @db.Decimal(10, 2)
+  status         String         // pending, success, failed
+  transactionId  String?
+  referenceId    String?
+  trackingCode   String?
+  paidAt         DateTime?
+  gatewayResponse Json?
+  failedReason   String?
+  callbackUrl    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([orderId])
+  @@index([gatewayId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  PENDING     // در انتظار پرداخت
+  PROCESSING  // در حال پردازش
+  PAID        // پرداخت شده
+  VERIFIED    // تایید شده
+  FAILED      // ناموفق
+  CANCELLED   // لغو شده
+  REFUNDED    // بازگشت داده شده
+}
+
+// Customer Chat model for consultation widget
+model CustomerChat {
+  id           Int      @id @default(autoincrement())
+  customerName String
+  customerPhone String
+  customerEmail String? // ایمیل مشتری (اختیاری)
+  message      String   @db.Text
+  status       String   @default("pending") // pending, replied, closed
+  source       String?  @default("chat") // chat, contact_form
+  adminReply   String?  @db.Text
+  repliedAt    DateTime?
+  repliedBy    String?  // admin username who replied
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([source])
+}
+
+// Admin Role model for role-based access control
+model AdminRole {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique // sales, supply, warehouse, finance, admin
+  displayName   String   // نام نمایشی فارسی
+  permissions   Json     // آرایه‌ای از مجوزها
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  users         User[]   // کاربران با این نقش
+}
+
+// Activity Log model for tracking admin actions
+model AdminActivity {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String   // create, update, delete, view
+  entityType  String   // product, order, user, etc.
+  entityId    String
+  details     String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
+// Invoice model for sales management
+model Invoice {
+  id             Int           @id @default(autoincrement())
+  invoiceNumber  String        @unique
+  customerId     String?
+  customer       User?         @relation("CustomerInvoices", fields: [customerId], references: [id])
+  status         InvoiceStatus @default(OPEN)
+  totalAmount    Decimal       @db.Decimal(10, 2)
+  paidAmount     Decimal       @db.Decimal(10, 2) @default(0)
+  dueDate        DateTime?
+  paymentDate    DateTime?
+  notes          String?       @db.Text
+  createdById    String
+  createdBy      User         @relation("CreatedInvoices", fields: [createdById], references: [id])
+  items          InvoiceItem[]
+  paymentDocuments PaymentDocument[] // مستندات پرداخت
+  debts          Debt[]        // روابط بدهی
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+// Payment Document model for tracking payment documents
+model PaymentDocument {
+  id            Int           @id @default(autoincrement())
+  invoiceId     Int
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  type          String        // check, bank_transfer, cash
+  amount        Decimal       @db.Decimal(10, 2)
+  date          DateTime
+  checkNumber   String?       // شماره چک
+  checkDate     DateTime?     // تاریخ چک
+  accountNumber String?       // شماره حساب
+  bankName      String?       // نام بانک
+  notes         String?       @db.Text // یادداشت
+  createdBy     String        // کاربر ایجادکننده
+  createdByUser User          @relation("CreatedPaymentDocuments", fields: [createdBy], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([invoiceId])
+  @@index([type])
+  @@index([date])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+model InvoiceItem {
+  id            Int         @id @default(autoincrement())
+  invoiceId     Int
+  invoice       Invoice     @relation(fields: [invoiceId], references: [id])
+  productId     Int
+  product       Product     @relation(fields: [productId], references: [id])
+  packId        Int?
+  pack          Pack?       @relation("PackInvoiceItems", fields: [packId], references: [id])
+  quantity      Int
+  price         Decimal     @db.Decimal(10, 2)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@index([packId])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderSource {
+  WEBSITE
+  SALES_REP
+}
+
+enum OrderStatus {
+  PENDING
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  PENDING_FINANCE_APPROVAL
+  FINANCE_APPROVED
+  PENDING_WAREHOUSE_APPROVAL
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  OPEN
+  PAID
+  CANCELLED
+  OVERDUE
+}
+
+// Product Pack model for sales team
+// model ProductPack {
+//   id           Int              @id @default(autoincrement())
+//   name         String
+//   description  String?          @db.Text
+//   price        Decimal          @db.Decimal(10, 2)
+//   comparePrice Decimal?         @db.Decimal(10, 2)
+//   isActive     Boolean          @default(true)
+//   items        ProductPackItem[]
+//   invoiceItems InvoiceItem[]
+//   createdAt    DateTime         @default(now())
+//   updatedAt    DateTime         @updatedAt
+// }
+
+model ProductPackItem {
+  id            Int         @id @default(autoincrement())
+  productId     Int
+  product       Product     @relation(fields: [productId], references: [id])
+  packId        Int
+  pack          Pack        @relation("PackItems", fields: [packId], references: [id])
+  quantity      Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([productId])
+  @@index([packId])
+}
+
+// Supplier model for supply management
+model Supplier {
+  id                Int               @id @default(autoincrement())
+  name              String
+  email             String?
+  phone             String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  isActive          Boolean           @default(true)
+  purchaseOrders    PurchaseOrder[]
+  purchaseInvoices  PurchaseInvoice[]
+  inbounds          Inbound[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([name])
+  @@index([email])
+  @@index([phone])
+}
+
+// Purchase Order model for ordering from suppliers
+model PurchaseOrder {
+  id             Int           @id @default(autoincrement())
+  orderNumber    String        @unique
+  supplierId     Int
+  supplier       Supplier      @relation(fields: [supplierId], references: [id])
+  status         POStatus      @default(DRAFT)
+  totalAmount    Decimal       @db.Decimal(10, 2)
+  notes          String?       @db.Text
+  createdBy      String        // کاربر ایجادکننده
+  createdByUser  User         @relation("CreatedPurchaseOrders", fields: [createdBy], references: [id])
+  approvedBy     String?       // کاربر تایید کننده
+  approvedByUser User?        @relation("ApprovedPurchaseOrders", fields: [approvedBy], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  items          PurchaseOrderItem[]
+
+  @@index([supplierId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([approvedBy])
+  @@index([createdAt])
+}
+
+// Purchase Order Item for individual products in a purchase order
+model PurchaseOrderItem {
+  id             Int           @id @default(autoincrement())
+  purchaseOrderId Int
+  purchaseOrder  PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  productId      Int
+  product        Product       @relation(fields: [productId], references: [id])
+  quantity       Int
+  price          Decimal       @db.Decimal(10, 2)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+}
+
+// Purchase Invoice model for supplier invoices
+model PurchaseInvoice {
+  id             Int           @id @default(autoincrement())
+  invoiceNumber  String        @unique
+  supplierId     Int
+  supplier       Supplier      @relation(fields: [supplierId], references: [id])
+  status         PIStatus      @default(DRAFT)
+  totalAmount    Decimal       @db.Decimal(10, 2)
+  paidAmount     Decimal       @db.Decimal(10, 2) @default(0)
+  notes          String?       @db.Text
+  createdBy      String        // کاربر ایجادکننده
+  createdByUser  User         @relation("CreatedPurchaseInvoices", fields: [createdBy], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  items          PurchaseInvoiceItem[]
+
+  @@index([supplierId])
+  @@index([status])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+// Purchase Invoice Item for individual products in a purchase invoice
+model PurchaseInvoiceItem {
+  id                Int            @id @default(autoincrement())
+  purchaseInvoiceId Int
+  purchaseInvoice   PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id])
+  productId         Int
+  product           Product         @relation(fields: [productId], references: [id])
+  quantity          Int
+  price             Decimal         @db.Decimal(10, 2)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([purchaseInvoiceId])
+  @@index([productId])
+}
+
+enum POStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  ORDERED
+  RECEIVED
+  CANCELLED
+}
+
+enum PIStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Pack {
+  id          Int              @id @default(autoincrement())
+  name        String
+  slug        String          @unique
+  description String?         @db.Text
+  items       ProductPackItem[] @relation("PackItems")
+  invoiceItems InvoiceItem[]  @relation("PackInvoiceItems")
+  outboundItems OutboundItem[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([name])
+  @@index([createdAt])
+}
+
+// Inbound model for incoming goods/purchases
+model Inbound {
+  id             Int      @id @default(autoincrement())
+  invoiceNumber  String   @unique // شماره فاکتور (اتومات)
+  productTitle   String   // عنوان محصول
+  supplierId     Int?     // تامین کننده
+  supplier       Supplier? @relation(fields: [supplierId], references: [id])
+  supplierName   String?  // نام تامین کننده (در صورت عدم وجود در سیستم)
+  supplierPhone  String?  // شماره تامین کننده
+  supplierAddress String? @db.Text // آدرس تامین کننده
+  date           DateTime // تاریخ
+  quantity       Int      // تعداد
+  totalPrice     Decimal  @db.Decimal(10, 2) // قیمت کلی فاکتور
+  unitPrice      Decimal  @db.Decimal(10, 2) // قیمت واحد (محاسبه شده)
+  createdBy      String   // کاربر ایجادکننده
+  createdByUser  User     @relation("CreatedInbounds", fields: [createdBy], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([invoiceNumber])
+  @@index([supplierId])
+  @@index([createdBy])
+  @@index([date])
+  @@index([createdAt])
+}
+
+// Outbound model for outgoing goods/sales
+model Outbound {
+  id               Int              @id @default(autoincrement())
+  invoiceCode      String           @unique // کد فاکتور
+  status           OutboundStatus   @default(OPEN) // وضعیت فاکتور
+  orderDate        DateTime         // تاریخ سفارش
+  deliveryDate     DateTime         // تاریخ تحویل (لیمیت تایم)
+  customerName     String           // سفارش دهنده
+  customerPhone    String?          // شماره سفارش دهنده
+  settlementPeriod SettlementPeriod @default(CASH) // دوره تسویه
+  customerOrder    String           // سفارش مشتری
+  productDescription String         @db.Text // شرح کالا
+  items            OutboundItem[]   // آیتم‌های فاکتور
+  totalQuantity    Int              // تعداد کل کالاها
+  purchaseAmount   Decimal          @db.Decimal(10, 2) // مبلغ خرید
+  marginPercent    Int              // درصد مارژین
+  salesAmount      Decimal          @db.Decimal(10, 2) // مبلغ فروش
+  createdBy        String           // کاربر ایجادکننده (مدیر فروش)
+  createdByUser    User             @relation("CreatedOutbounds", fields: [createdBy], references: [id])
+  approvedBy       String?          // تایید کننده (مدیر مالی)
+  approvedByUser   User?            @relation("ApprovedOutbounds", fields: [approvedBy], references: [id])
+  shippedBy        String?          // ارسال کننده (مدیر انبار)
+  shippedByUser    User?            @relation("ShippedOutbounds", fields: [shippedBy], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([invoiceCode])
+  @@index([status])
+  @@index([orderDate])
+  @@index([deliveryDate])
+  @@index([createdBy])
+  @@index([approvedBy])
+  @@index([shippedBy])
+  @@index([createdAt])
+}
+
+// Outbound items for detailed product listing
+model OutboundItem {
+  id          Int       @id @default(autoincrement())
+  outboundId  Int
+  outbound    Outbound  @relation(fields: [outboundId], references: [id], onDelete: Cascade)
+  productId   Int?
+  product     Product?  @relation(fields: [productId], references: [id])
+  packId      Int?
+  pack        Pack?     @relation(fields: [packId], references: [id])
+  productName String    // نام محصول (در صورت عدم وجود در سیستم)
+  quantity    Int       // تعداد
+  unitPrice   Decimal   @db.Decimal(10, 2) // قیمت واحد
+  totalPrice  Decimal   @db.Decimal(10, 2) // قیمت کل
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([outboundId])
+  @@index([productId])
+  @@index([packId])
+}
+
+enum OutboundStatus {
+  OPEN          // باز - مدیر فروش قرار داده ولی مالی تایید نکرده
+  IN_TRANSIT    // درحال ارسال - مالی تایید کرده و در بررسی انبار
+  SHIPPED       // ارسال شده - انبار ارسال کرده
+}
+
+enum SettlementPeriod {
+  CASH          // نقدی
+  ONE_MONTH     // یک ماهه
+  TWO_MONTHS    // دو ماهه
+  THREE_MONTHS  // سه ماهه
+}
+
+// Discount Code model for logarithmic discount system
+model DiscountCode {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  percentage  Int      // درصد تخفیف
+  minPurchase Int      // حداقل مبلغ خرید
+  maxDiscount Int      // حداکثر مبلغ تخفیف
+  isActive    Boolean  @default(true)
+  isUsed      Boolean  @default(false)
+  usedAt      DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("discount_codes")
+  @@index([userId])
+  @@index([code])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+// Purchase Comments model for post-purchase feedback
+model PurchaseComment {
+  id          Int      @id @default(autoincrement())
+  orderId     String   @unique
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating      Int      // امتیاز 1-5
+  comment     String   @db.Text // نظر مشتری
+  isPublic    Boolean  @default(false) // آیا عمومی باشد؟
+  isApproved  Boolean  @default(false) // تایید شده توسط ادمین
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("purchase_comments")
+  @@index([orderId])
+  @@index([userId])
+  @@index([rating])
+  @@index([isApproved])
+}
+
+// System settings for storing configuration
+model SystemSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+// User Pack model for regular user customization
+model UserPack {
+  id          Int               @id @default(autoincrement())
+  name        String            // نام پک
+  description String?           @db.Text // توضیحات
+  userId      String            // کاربر سازنده
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPublic    Boolean           @default(false) // آیا عمومی است؟
+  isActive    Boolean           @default(true)
+  items       UserPackItem[]    // آیتم‌های پک
+  orders      UserPackOrder[]   // سفارشات این پک
+  cartItems   CartItem[]        // آیتم‌های سبد خرید
+  orderItems  OrderItem[]       // آیتم‌های سفارش
+  totalPrice  Decimal?          @db.Decimal(10, 2) // قیمت کل محاسبه شده
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([isPublic])
+  @@index([name])
+}
+
+// User Pack Items
+model UserPackItem {
+  id            Int        @id @default(autoincrement())
+  userPackId    Int
+  userPack      UserPack   @relation(fields: [userPackId], references: [id], onDelete: Cascade)
+  productId     Int
+  product       Product    @relation(fields: [productId], references: [id])
+  quantity      Int        // تعداد مورد نیاز
+  notes         String?    // یادداشت‌های خاص
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([userPackId])
+  @@index([productId])
+}
+
+// User Pack Orders for tracking user pack purchases
+model UserPackOrder {
+  id            String          @id @default(cuid())
+  orderNumber   String          @unique // شماره سفارش
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  userPackId    Int?            // پک شخصی‌سازی شده (اختیاری)
+  userPack      UserPack?       @relation(fields: [userPackId], references: [id])
+  status        OrderStatus     @default(PENDING)
+  totalAmount   Decimal         @db.Decimal(10, 2)
+  notes         String?         @db.Text
+  items         UserPackOrderItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([userPackId])
+  @@index([status])
+  @@index([orderNumber])
+}
+
+// User Pack Order Items
+model UserPackOrderItem {
+  id                Int             @id @default(autoincrement())
+  userPackOrderId   String
+  userPackOrder     UserPackOrder   @relation(fields: [userPackOrderId], references: [id], onDelete: Cascade)
+  productId         Int
+  product           Product         @relation(fields: [productId], references: [id])
+  quantity          Int
+  unitPrice         Decimal         @db.Decimal(10, 2)
+  totalPrice        Decimal         @db.Decimal(10, 2)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userPackOrderId])
+  @@index([productId])
+}
+
+// Product Request model for customers to request unavailable products
+model ProductRequest {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  user        User     @relation("UserProductRequests", fields: [userId], references: [id], onDelete: Cascade)
+  productName String
+  description String?  @db.Text
+  quantity    Int      @default(1)
+  priority    RequestPriority @default(NORMAL)
+  status      RequestStatus @default(PENDING)
+  adminNotes  String?  @db.Text
+  adminId     String?  // Admin who processed the request
+  admin       User?    @relation("AdminProductRequests", fields: [adminId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+enum RequestPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum RequestStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+// Debt model for tracking customer debts
+model Debt {
+  id              Int             @id @default(autoincrement())
+  customerId      String          // شناسه مشتری
+  customer        User            @relation("CustomerDebts", fields: [customerId], references: [id], onDelete: Cascade)
+  invoiceId       Int?            // شناسه فاکتور مرتبط (اختیاری)
+  invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
+  orderId         String?         // شناسه سفارش مرتبط (اختیاری)
+  order           Order?          @relation(fields: [orderId], references: [id])
+  amount          Decimal         @db.Decimal(10, 2) // مبلغ بدهی
+  paidAmount      Decimal         @db.Decimal(10, 2) @default(0) // مبلغ پرداخت شده
+  remainingAmount Decimal         @db.Decimal(10, 2) // مبلغ باقی‌مانده
+  settlementType  SettlementPeriod // نوع تسویه (نقدی، یک ماهه، دو ماهه، سه ماهه)
+  dueDate         DateTime        // تاریخ سررسید
+  status          DebtStatus      @default(PENDING) // وضعیت بدهی
+  description     String?         @db.Text // توضیحات
+  notes           String?         @db.Text // یادداشت‌های داخلی
+  salesRepId      String?         // شناسه مسئول فروش
+  salesRep        User?           @relation("SalesRepDebts", fields: [salesRepId], references: [id])
+  adminId         String?         // شناسه ادمین که بدهی را ثبت کرده
+  admin           User?           @relation("AdminDebts", fields: [adminId], references: [id])
+  payments        DebtPayment[]   // پرداخت‌های انجام شده
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([customerId])
+  @@index([invoiceId])
+  @@index([orderId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([salesRepId])
+  @@index([createdAt])
+}
+
+// Debt Payment model for tracking individual payments
+model DebtPayment {
+  id          Int           @id @default(autoincrement())
+  debtId      Int
+  debt        Debt          @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amount      Decimal       @db.Decimal(10, 2) // مبلغ پرداخت
+  paymentMethod PaymentMethod // روش پرداخت
+  paymentDetails String?     @db.Text // جزئیات پرداخت (شماره کارت، شماره حساب، etc.)
+  adminId     String?       // شناسه ادمین که پرداخت را ثبت کرده
+  admin       User?         @relation("AdminDebtPayments", fields: [adminId], references: [id])
+  notes       String?       @db.Text // یادداشت‌های پرداخت
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([debtId])
+  @@index([paymentMethod])
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+enum DebtStatus {
+  PENDING     // در انتظار پرداخت
+  PARTIAL     // پرداخت جزئی
+  PAID        // پرداخت شده
+  OVERDUE     // معوق
+  CANCELLED   // لغو شده
+}
+
+enum PaymentMethod {
+  CASH        // نقدی
+  CARD        // کارت بانکی
+  BANK_TRANSFER // انتقال بانکی
+  CHECK       // چک
+  OTHER       // سایر
+}

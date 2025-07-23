@@ -1,0 +1,24 @@
+SET FOREIGN_KEY_CHECKS = 0;
+
+DELETE FROM ProductImage;
+DELETE FROM ProductTag;
+DELETE FROM ProductRating;
+DELETE FROM ProductReview;
+DELETE FROM CartItem;
+DELETE FROM WishlistItem;
+DELETE FROM OrderItem;
+DELETE FROM StockAlert;
+DELETE FROM Favorite;
+DELETE FROM InvoiceItem;
+DELETE FROM ProductPackItem;
+DELETE FROM PurchaseOrderItem;
+DELETE FROM PurchaseInvoiceItem;
+DELETE FROM OutboundItem;
+DELETE FROM ReviewVote;
+DELETE FROM ReviewReply;
+DELETE FROM Product;
+DELETE FROM CategoryL3;
+DELETE FROM CategoryL2;
+DELETE FROM CategoryL1;
+
+SET FOREIGN_KEY_CHECKS = 1; 

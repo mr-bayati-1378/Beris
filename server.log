@@ -1,0 +1,123 @@
+
+> beris@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.30
+  - Local:        http://localhost:3000
+  - Environments: .env
+  - Experiments (use with caution):
+    · turbo
+
+ ✓ Starting...
+ ✓ Ready in 11.3s
+ ✓ Compiled /src/middleware in 234ms (72 modules)
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 556ms (207 modules)
+[33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev
+ GET /api/auth/session 200 in 850ms
+ ✓ Compiled /api/auth/login in 68ms (209 modules)
+[33m[auth][warn][debug-enabled][0m Read more: https://warnings.authjs.dev
+User authenticated successfully: cmcj19b9o0001kzix1zd5po24
+ POST /api/auth/login 200 in 271ms
+ GET /api/auth/session 200 in 33ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 3.9s (820 modules)
+ GET /settings 200 in 4167ms
+ ✓ Compiled in 266ms (312 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 616ms (869 modules)
+ ✓ Compiled /api/categories/tree in 73ms (550 modules)
+ ✓ Compiled (554 modules)
+ GET /api/categories/tree 200 in 233ms
+ GET /api/products?limit=8 200 in 234ms
+ GET /api/categories/with-products 200 in 236ms
+ GET / 200 in 1056ms
+ ✓ Compiled in 224ms (335 modules)
+ ✓ Compiled in 150ms (335 modules)
+ ✓ Compiled in 437ms (335 modules)
+ ✓ Compiled in 131ms (335 modules)
+ ✓ Compiled in 127ms (335 modules)
+ ✓ Compiled in 151ms (335 modules)
+ ✓ Compiled in 141ms (335 modules)
+ ✓ Compiled in 135ms (335 modules)
+ ✓ Compiled in 115ms (335 modules)
+ ✓ Compiled in 109ms (335 modules)
+ ✓ Compiled in 120ms (335 modules)
+ ✓ Compiled in 114ms (335 modules)
+ ✓ Compiled in 117ms (335 modules)
+ ✓ Compiled in 103ms (335 modules)
+ ✓ Compiled in 123ms (335 modules)
+ ✓ Compiled in 101ms (335 modules)
+ ✓ Compiled in 126ms (335 modules)
+ ✓ Compiled in 103ms (335 modules)
+ ✓ Compiled in 124ms (335 modules)
+ ✓ Compiled in 99ms (335 modules)
+ ✓ Compiled in 434ms (335 modules)
+ ✓ Compiled in 127ms (335 modules)
+ ✓ Compiled in 112ms (335 modules)
+ ✓ Compiled in 452ms (335 modules)
+ ✓ Compiled in 126ms (335 modules)
+ ✓ Compiled in 268ms (335 modules)
+ ✓ Compiled in 152ms (335 modules)
+ ✓ Compiled in 149ms (335 modules)
+ ✓ Compiled in 595ms (335 modules)
+ ✓ Compiled in 115ms (335 modules)
+ ✓ Compiled in 137ms (335 modules)
+ ✓ Compiled in 135ms (335 modules)
+ ✓ Compiled in 156ms (335 modules)
+ ✓ Compiled in 167ms (335 modules)
+ ✓ Compiled in 172ms (335 modules)
+ ✓ Compiled in 133ms (335 modules)
+ ✓ Compiled in 142ms (335 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/home/god/beris/.next/cache/webpack/client-development/0.pack.gz_' -> '/home/god/beris/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 135ms (335 modules)
+ ✓ Compiled in 163ms (335 modules)
+ ✓ Compiled in 122ms (335 modules)
+ ✓ Compiled in 153ms (335 modules)
+ ✓ Compiled in 210ms (335 modules)
+ ✓ Compiled in 132ms (335 modules)
+ ✓ Compiled in 127ms (335 modules)
+ ✓ Compiled in 109ms (335 modules)
+ ✓ Compiled in 147ms (335 modules)
+ ✓ Compiled in 149ms (335 modules)
+ ✓ Compiled in 258ms (335 modules)
+ ✓ Compiled in 153ms (335 modules)
+ ✓ Compiled in 115ms (335 modules)
+ ✓ Compiled in 108ms (335 modules)
+ ✓ Compiled in 127ms (335 modules)
+ ✓ Compiled in 116ms (335 modules)
+ ✓ Compiled in 129ms (335 modules)
+ ✓ Compiled in 107ms (335 modules)
+ ✓ Compiled in 138ms (335 modules)
+ ✓ Compiled in 108ms (335 modules)
+ ✓ Compiled in 110ms (335 modules)
+ ✓ Compiled in 123ms (335 modules)
+ ✓ Compiled in 113ms (335 modules)
+ ✓ Compiled in 99ms (335 modules)
+ ✓ Compiled in 152ms (335 modules)
+ ✓ Compiled in 107ms (335 modules)
+ ✓ Compiled in 132ms (335 modules)
+ ✓ Compiled in 108ms (335 modules)
+ ✓ Compiled in 106ms (335 modules)
+ ✓ Compiled in 124ms (335 modules)
+ ✓ Compiled in 121ms (335 modules)
+ ✓ Compiled in 99ms (335 modules)
+ ✓ Compiled in 117ms (335 modules)
+ ✓ Compiled in 102ms (335 modules)
+ ✓ Compiled in 177ms (335 modules)
+ ✓ Compiled in 113ms (335 modules)
+ ✓ Compiled in 104ms (335 modules)
+ ✓ Compiled in 96ms (335 modules)
+ ✓ Compiled in 100ms (335 modules)
+ ✓ Compiled in 122ms (335 modules)
+ ✓ Compiled in 110ms (335 modules)
+ ✓ Compiled in 92ms (335 modules)
+ ✓ Compiled in 110ms (335 modules)
+ ✓ Compiled in 98ms (335 modules)
+ ✓ Compiled in 185ms (335 modules)
+ ✓ Compiled in 115ms (335 modules)
+ ✓ Compiled in 160ms (335 modules)
+ ✓ Compiled in 112ms (335 modules)
+ ✓ Compiled in 199ms (335 modules)
+ ✓ Compiled in 115ms (335 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/home/god/beris/.next/cache/webpack/client-development/4.pack.gz_' -> '/home/god/beris/.next/cache/webpack/client-development/4.pack.gz'

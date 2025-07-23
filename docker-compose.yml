@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: beris_postgres
+    environment:
+      POSTGRES_DB: beris
+      POSTGRES_USER: beris_user
+      POSTGRES_PASSWORD: beris_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./prisma/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - beris_network
+    restart: unless-stopped
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: beris_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - beris_network
+    restart: unless-stopped
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: beris_app
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://beris_user:beris_password@postgres:5432/beris
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-secret-key-here
+      - KAVENEGAR_API_KEY=your-kavenegar-api-key
+      - TYPESENSE_API_KEY=your-typesense-api-key
+      - TYPESENSE_HOST=typesense
+      - TYPESENSE_PORT=8108
+      - TYPESENSE_PROTOCOL=http
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./public/uploads:/app/public/uploads
+      - ./typesense-data:/app/typesense-data
+    depends_on:
+      - postgres
+      - redis
+      - typesense
+    networks:
+      - beris_network
+    restart: unless-stopped
+
+  # Typesense Search Engine
+  typesense:
+    image: typesense/typesense:0.25.1
+    container_name: beris_typesense
+    environment:
+      - TYPESENSE_API_KEY=your-typesense-api-key
+      - TYPESENSE_DATA_DIR=/data
+    volumes:
+      - typesense_data:/data
+    ports:
+      - "8108:8108"
+    networks:
+      - beris_network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: beris_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    networks:
+      - beris_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  typesense_data:
+    driver: local
+
+networks:
+  beris_network:
+    driver: bridge 
