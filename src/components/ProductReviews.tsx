@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { FaStar, FaUser, FaThumbsUp, FaThumbsDown, FaReply, FaHeart } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
@@ -56,11 +56,7 @@ export default function ProductReviews({ productSlug, className = "" }: ProductR
     content: '',
   });
 
-  useEffect(() => {
-    fetchReviews();
-  }, [productSlug, fetchReviews]);
-
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       const res = await fetch(`/api/products/${productSlug}/reviews`);
       if (res.ok) {
@@ -72,7 +68,11 @@ export default function ProductReviews({ productSlug, className = "" }: ProductR
     } finally {
       setLoading(false);
     }
-  };
+  }, [productSlug]);
+
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
   const submitReview = async () => {
     if (!user) {
