@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useAuth } from './useAuth';
 
 interface CartItem {
@@ -42,39 +42,53 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const refreshCartRef = useRef<() => Promise<void>>();
 
-  const refreshCart = async () => {
+  const refreshCart = useCallback(async () => {
     if (!user) {
       setItems([]);
+      setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
       const res = await fetch('/api/cart', {
-        credentials: 'include'
+        credentials: 'include',
       });
+
       if (res.ok) {
         const data = await res.json();
         setItems(data.items || []);
+      } else {
+        console.error('Error fetching cart:', res.status);
+        setItems([]);
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
+      setItems([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  // Store refreshCart in ref to avoid dependency issues
+  refreshCartRef.current = refreshCart;
 
   useEffect(() => {
     refreshCart();
-  }, [user, refreshCart]);
+  }, [user]);
 
   // Listen for cart updates
   useEffect(() => {
-    const handleCartUpdate = () => refreshCart();
+    const handleCartUpdate = () => {
+      if (refreshCartRef.current) {
+        refreshCartRef.current();
+      }
+    };
     window.addEventListener('cartUpdated', handleCartUpdate);
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
-  }, [refreshCart]);
+  }, []);
 
   const itemCount = items.length; // تعداد آیتم‌ها نه تعداد کل محصولات
 
